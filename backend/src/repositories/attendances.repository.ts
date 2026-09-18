@@ -1,57 +1,89 @@
 import pool from "../config/database.js";
 
+// obtiene todas las asistencias
 export const getAttendances = async () => {
   const result = await pool.query(
-    "SELECT * FROM attendances"
+    `SELECT
+      id,
+      user_id,
+      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date
+    FROM attendances
+    ORDER BY id DESC`
   );
 
   return result.rows;
 };
 
-export const createAttendance = async (
-  userId: number,
-  attendanceDate: string
+// obtiene las asistencias de un socio
+export const getAttendancesByUserId = async (
+  userId: number
 ) => {
   const result = await pool.query(
-    `INSERT INTO attendances
-      (user_id, attendance_date)
-     VALUES ($1, $2)
-     RETURNING *`,
-    [userId, attendanceDate]
+    `SELECT
+      id,
+      user_id,
+      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date
+    FROM attendances
+    WHERE user_id = $1
+    ORDER BY id DESC`,
+    [userId]
   );
 
-  return result.rows[0];
+  return result.rows;
 };
 
-export const findAttendanceById = async (id: number) => {
+// obtiene una asistencia por su ID
+export const findAttendanceById = async (
+  id: number
+) => {
   const result = await pool.query(
-    "SELECT * FROM attendances WHERE id = $1",
+    `SELECT
+      id,
+      user_id,
+      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date
+    FROM attendances
+    WHERE id = $1`,
     [id]
   );
 
   return result.rows[0];
 };
 
-export const updateAttendance = async (
-  id: number,
+// crea una nueva asistencia
+export const createAttendance = async (
+  userId: number,
   attendanceDate: string
 ) => {
   const result = await pool.query(
-    `UPDATE attendances
-     SET attendance_date = $1
-     WHERE id = $2
-     RETURNING *`,
-    [attendanceDate, id]
+    `INSERT INTO attendances (
+      user_id,
+      attendance_date
+    )
+    VALUES ($1, $2)
+    RETURNING
+      id,
+      user_id,
+      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date`,
+    [
+      userId,
+      attendanceDate,
+    ]
   );
 
   return result.rows[0];
 };
 
-export const deleteAttendance = async (id: number) => {
+// elimina una asistencia
+export const deleteAttendance = async (
+  id: number
+) => {
   const result = await pool.query(
     `DELETE FROM attendances
      WHERE id = $1
-     RETURNING id`,
+     RETURNING
+       id,
+       user_id,
+       TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date`,
     [id]
   );
 
