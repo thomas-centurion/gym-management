@@ -2,6 +2,7 @@ import {
   getAttendances,
   getAttendancesByUserId,
   findAttendanceById,
+  findAttendanceByUserAndDate,
   createAttendance,
   deleteAttendance,
 } from "../repositories/attendances.repository.js";
@@ -126,6 +127,18 @@ export const createAttendanceService = async (
   if (isAdmin && attendanceDate > today) {
     throw new Error(
       "No se pueden registrar asistencias futuras"
+    );
+  }
+
+  const existingAttendance =
+    await findAttendanceByUserAndDate(
+      userId,
+      attendanceDate
+    );
+
+  if (existingAttendance) {
+    throw new Error(
+      "El socio ya tiene una asistencia registrada para esa fecha"
     );
   }
 

@@ -150,6 +150,8 @@ export const createAttendanceController = async (
         error.message ===
           "Los socios solamente pueden registrar la asistencia del día actual" ||
         error.message ===
+          "El socio ya tiene una asistencia registrada para esa fecha" ||
+        error.message ===
           "El socio no tiene una membresía activa"
       ) {
         return res.status(400).json({
@@ -212,7 +214,9 @@ export const createAttendanceByAdminController =
           error.message ===
             "La fecha debe tener el formato YYYY-MM-DD" ||
           error.message ===
-            "No se pueden registrar asistencias futuras"
+            "No se pueden registrar asistencias futuras" ||
+          error.message ===
+            "El socio ya tiene una asistencia registrada para esa fecha"
         ) {
           return res.status(400).json({
             error: error.message,

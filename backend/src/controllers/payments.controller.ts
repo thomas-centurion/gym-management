@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import {
   getPaymentsService,
   getPaymentsByUserIdService,
@@ -7,12 +8,17 @@ import {
 } from "../services/payments.service.js";
 
 // obtiene todos los pagos
-export const getPaymentsController = async (req: Request, res: Response) => {
+export const getPaymentsController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const payments = await getPaymentsService();
 
     res.json(payments);
   } catch (error) {
+    console.error("ERROR AL OBTENER LOS PAGOS:", error);
+
     res.status(500).json({
       error: "Error interno del servidor",
     });
@@ -20,7 +26,10 @@ export const getPaymentsController = async (req: Request, res: Response) => {
 };
 
 // obtiene los pagos del socio autenticado
-export const getMyPaymentsController = async (req: Request, res: Response) => {
+export const getMyPaymentsController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -28,10 +37,17 @@ export const getMyPaymentsController = async (req: Request, res: Response) => {
       });
     }
 
-    const payments = await getPaymentsByUserIdService(req.user.id);
+    const payments = await getPaymentsByUserIdService(
+      req.user.id
+    );
 
     res.json(payments);
   } catch (error) {
+    console.error(
+      "ERROR AL OBTENER LOS PAGOS DEL SOCIO:",
+      error
+    );
+
     res.status(500).json({
       error: "Error interno del servidor",
     });
@@ -39,7 +55,10 @@ export const getMyPaymentsController = async (req: Request, res: Response) => {
 };
 
 // registra un pago simulado
-export const createPaymentController = async (req: Request, res: Response) => {
+export const createPaymentController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -49,7 +68,11 @@ export const createPaymentController = async (req: Request, res: Response) => {
 
     const { membershipId, plan } = req.body;
 
-    const result = await createPaymentService(req.user.id, membershipId, plan);
+    const result = await createPaymentService(
+      req.user.id,
+      membershipId,
+      plan
+    );
 
     res.status(201).json(result);
   } catch (error) {
@@ -60,14 +83,23 @@ export const createPaymentController = async (req: Request, res: Response) => {
         error.message === "Todos los campos son obligatorios" ||
         error.message === "El plan no es válido" ||
         error.message ===
-          "Para cambiar de plan debes utilizar el cambio de plan"
+          "Para cambiar de plan debes utilizar el cambio de plan" ||
+        error.message ===
+          "Ya existe un cambio de plan pendiente" ||
+        error.message ===
+          "Ya existe una membresía futura pendiente" ||
+        error.message ===
+          "Esta membresía no es la membresía actual"
       ) {
         return res.status(400).json({
           error: error.message,
         });
       }
 
-      if (error.message === "No tienes permisos para pagar esta membresía") {
+      if (
+        error.message ===
+        "No tienes permisos para pagar esta membresía"
+      ) {
         return res.status(403).json({
           error: error.message,
         });
@@ -87,7 +119,10 @@ export const createPaymentController = async (req: Request, res: Response) => {
 };
 
 // obtiene un pago por su ID
-export const getPaymentByIdController = async (req: Request, res: Response) => {
+export const getPaymentByIdController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const id = Number(req.params.id);
 
@@ -102,6 +137,8 @@ export const getPaymentByIdController = async (req: Request, res: Response) => {
         });
       }
     }
+
+    console.error("ERROR AL OBTENER EL PAGO:", error);
 
     res.status(500).json({
       error: "Error interno del servidor",

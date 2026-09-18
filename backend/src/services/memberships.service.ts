@@ -10,12 +10,43 @@ import {
 
 import { processPlanChange } from "../repositories/payments.repository.js";
 
-const validPlans = ["monthly", "quarterly", "annual"];
+const validPlans = [
+  "monthly",
+  "quarterly",
+  "annual",
+];
 
 const planPrices: Record<string, number> = {
   monthly: 10000,
   quarterly: 25000,
   annual: 90000,
+};
+
+// obtiene la fecha actual de Argentina
+const getArgentinaDate = (): string => {
+  const parts = new Intl.DateTimeFormat(
+    "en-CA",
+    {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }
+  ).formatToParts(new Date());
+
+  const year = parts.find(
+    (part) => part.type === "year"
+  )?.value;
+
+  const month = parts.find(
+    (part) => part.type === "month"
+  )?.value;
+
+  const day = parts.find(
+    (part) => part.type === "day"
+  )?.value;
+
+  return `${year}-${month}-${day}`;
 };
 
 // obtiene todas las membresías
@@ -31,21 +62,50 @@ export const createMembershipService = async (
   endDate: string,
   status: string
 ) => {
-  if (!userId || !plan || !startDate || !endDate || !status) {
-    throw new Error("Todos los campos son obligatorios");
+  if (
+    !userId ||
+    !plan ||
+    !startDate ||
+    !endDate ||
+    !status
+  ) {
+    throw new Error(
+      "Todos los campos son obligatorios"
+    );
   }
 
   if (!validPlans.includes(plan)) {
-    throw new Error("El plan no es válido");
+    throw new Error(
+      "El plan no es válido"
+    );
   }
 
-  if (status !== "active" && status !== "pending") {
-    throw new Error("El estado no es válido");
+  if (
+    status !== "active" &&
+    status !== "pending"
+  ) {
+    throw new Error(
+      "El estado no es válido"
+    );
   }
 
-  if (new Date(endDate) <= new Date(startDate)) {
+  if (
+    new Date(endDate) <=
+    new Date(startDate)
+  ) {
     throw new Error(
       "La fecha de finalización debe ser posterior a la fecha de inicio"
+    );
+  }
+
+  const currentMembership =
+    await findCurrentMembershipByUserId(
+      userId
+    );
+
+  if (currentMembership) {
+    throw new Error(
+      "No se puede crear una nueva membresía porque el socio ya tiene una membresía actual"
     );
   }
 
@@ -59,20 +119,28 @@ export const createMembershipService = async (
 };
 
 // obtiene una membresía por su ID
-export const getMembershipByIdService = async (id: number) => {
-  const membership = await findMembershipById(id);
+export const getMembershipByIdService = async (
+  id: number
+) => {
+  const membership =
+    await findMembershipById(id);
 
   if (!membership) {
-    throw new Error("Membresía no encontrada");
+    throw new Error(
+      "Membresía no encontrada"
+    );
   }
 
   return membership;
 };
 
 // obtiene la membresía actual de un socio
-export const getCurrentMembershipService = async (userId: number) => {
-  return await findCurrentMembershipByUserId(userId);
-};
+export const getCurrentMembershipService =
+  async (userId: number) => {
+    return await findCurrentMembershipByUserId(
+      userId
+    );
+  };
 
 // actualiza una membresía
 export const updateMembershipService = async (
@@ -82,25 +150,45 @@ export const updateMembershipService = async (
   endDate: string,
   status: string
 ) => {
-  if (!plan || !startDate || !endDate || !status) {
-    throw new Error("Todos los campos son obligatorios");
+  if (
+    !plan ||
+    !startDate ||
+    !endDate ||
+    !status
+  ) {
+    throw new Error(
+      "Todos los campos son obligatorios"
+    );
   }
 
-  const existingMembership = await findMembershipById(id);
+  const existingMembership =
+    await findMembershipById(id);
 
   if (!existingMembership) {
-    throw new Error("Membresía no encontrada");
+    throw new Error(
+      "Membresía no encontrada"
+    );
   }
 
   if (!validPlans.includes(plan)) {
-    throw new Error("El plan no es válido");
+    throw new Error(
+      "El plan no es válido"
+    );
   }
 
-  if (status !== "active" && status !== "pending") {
-    throw new Error("El estado no es válido");
+  if (
+    status !== "active" &&
+    status !== "pending"
+  ) {
+    throw new Error(
+      "El estado no es válido"
+    );
   }
 
-  if (new Date(endDate) <= new Date(startDate)) {
+  if (
+    new Date(endDate) <=
+    new Date(startDate)
+  ) {
     throw new Error(
       "La fecha de finalización debe ser posterior a la fecha de inicio"
     );
@@ -119,203 +207,254 @@ export const updateMembershipService = async (
 };
 
 // solicita un cambio de plan
-export const changeMembershipPlanService = async (
-  userId: number,
-  membershipId: number,
-  newPlan: string
-) => {
-  if (!newPlan) {
-    throw new Error("El plan es obligatorio");
-  }
+export const changeMembershipPlanService =
+  async (
+    userId: number,
+    membershipId: number,
+    newPlan: string
+  ) => {
+    if (!newPlan) {
+      throw new Error(
+        "El plan es obligatorio"
+      );
+    }
 
-  if (!validPlans.includes(newPlan)) {
-    throw new Error("El plan no es válido");
-  }
+    if (!validPlans.includes(newPlan)) {
+      throw new Error(
+        "El plan no es válido"
+      );
+    }
 
-  const membership = await findMembershipById(membershipId);
+    const membership =
+      await findMembershipById(
+        membershipId
+      );
 
-  if (!membership) {
-    throw new Error("Membresía no encontrada");
-  }
+    if (!membership) {
+      throw new Error(
+        "Membresía no encontrada"
+      );
+    }
 
-  if (membership.user_id !== userId) {
-    throw new Error(
-      "No tienes permisos para modificar esta membresía"
+    if (membership.user_id !== userId) {
+      throw new Error(
+        "No tienes permisos para modificar esta membresía"
+      );
+    }
+
+    if (membership.status !== "active") {
+      throw new Error(
+        "Solo puedes cambiar el plan de una membresía activa"
+      );
+    }
+
+    if (!membership.is_current) {
+      throw new Error(
+        "Esta membresía no es la membresía actual"
+      );
+    }
+
+    if (membership.next_plan) {
+      throw new Error(
+        "Ya existe un cambio de plan pendiente"
+      );
+    }
+
+    if (membership.cancel_at_end) {
+      throw new Error(
+        "No puedes cambiar de plan mientras la membresía está cancelada"
+      );
+    }
+
+    if (membership.plan === newPlan) {
+      throw new Error(
+        "El nuevo plan debe ser diferente al actual"
+      );
+    }
+
+    const amount = planPrices[newPlan];
+
+    let startDate: string;
+
+    // convierte la fecha de finalización a formato YYYY-MM-DD
+    if (
+      membership.end_date instanceof Date
+    ) {
+      const year =
+        membership.end_date.getUTCFullYear();
+
+      const month = String(
+        membership.end_date.getUTCMonth() + 1
+      ).padStart(2, "0");
+
+      const day = String(
+        membership.end_date.getUTCDate()
+      ).padStart(2, "0");
+
+      startDate =
+        `${year}-${month}-${day}`;
+    } else {
+      startDate =
+        String(membership.end_date)
+          .split("T")[0];
+    }
+
+    const end = new Date(
+      `${startDate}T00:00:00Z`
     );
-  }
 
-  if (membership.status !== "active") {
-    throw new Error(
-      "Solo puedes cambiar el plan de una membresía activa"
+    if (Number.isNaN(end.getTime())) {
+      throw new Error(
+        "La fecha de finalización de la membresía no es válida"
+      );
+    }
+
+    if (newPlan === "monthly") {
+      end.setUTCMonth(
+        end.getUTCMonth() + 1
+      );
+    }
+
+    if (newPlan === "quarterly") {
+      end.setUTCMonth(
+        end.getUTCMonth() + 3
+      );
+    }
+
+    if (newPlan === "annual") {
+      end.setUTCFullYear(
+        end.getUTCFullYear() + 1
+      );
+    }
+
+    const endDate =
+      end.toISOString().split("T")[0];
+
+    return await processPlanChange(
+      userId,
+      membershipId,
+      newPlan,
+      amount,
+      startDate,
+      endDate
     );
-  }
-
-  if (!membership.is_current) {
-    throw new Error(
-      "Esta membresía no es la membresía actual"
-    );
-  }
-
-  if (membership.next_plan) {
-    throw new Error(
-      "Ya existe un cambio de plan pendiente"
-    );
-  }
-
-  if (membership.cancel_at_end) {
-    throw new Error(
-      "No puedes cambiar de plan mientras la membresía está cancelada"
-    );
-  }
-
-  if (membership.plan === newPlan) {
-    throw new Error(
-      "El nuevo plan debe ser diferente al actual"
-    );
-  }
-
-  const amount = planPrices[newPlan];
-
-  let startDate: string;
-
-  // convierte la fecha de finalización a formato YYYY-MM-DD
-  if (membership.end_date instanceof Date) {
-    const year = membership.end_date.getUTCFullYear();
-    const month = String(
-      membership.end_date.getUTCMonth() + 1
-    ).padStart(2, "0");
-    const day = String(
-      membership.end_date.getUTCDate()
-    ).padStart(2, "0");
-
-    startDate = `${year}-${month}-${day}`;
-  } else {
-    startDate = String(membership.end_date).split("T")[0];
-  }
-
-  const end = new Date(`${startDate}T00:00:00Z`);
-
-  if (Number.isNaN(end.getTime())) {
-    throw new Error(
-      "La fecha de finalización de la membresía no es válida"
-    );
-  }
-
-  if (newPlan === "monthly") {
-    end.setUTCMonth(end.getUTCMonth() + 1);
-  }
-
-  if (newPlan === "quarterly") {
-    end.setUTCMonth(end.getUTCMonth() + 3);
-  }
-
-  if (newPlan === "annual") {
-    end.setUTCFullYear(end.getUTCFullYear() + 1);
-  }
-
-  const endDate = end.toISOString().split("T")[0];
-
-  return await processPlanChange(
-    userId,
-    membershipId,
-    newPlan,
-    amount,
-    startDate,
-    endDate
-  );
-};
+  };
 
 // cancela una membresía al finalizar el período actual
-export const cancelMembershipService = async (
-  userId: number,
-  membershipId: number
-) => {
-  const membership = await findMembershipById(membershipId);
+export const cancelMembershipService =
+  async (
+    userId: number,
+    membershipId: number
+  ) => {
+    const membership =
+      await findMembershipById(
+        membershipId
+      );
 
-  if (!membership) {
-    throw new Error("Membresía no encontrada");
-  }
+    if (!membership) {
+      throw new Error(
+        "Membresía no encontrada"
+      );
+    }
 
-  if (membership.user_id !== userId) {
-    throw new Error(
-      "No tienes permisos para modificar esta membresía"
+    if (membership.user_id !== userId) {
+      throw new Error(
+        "No tienes permisos para modificar esta membresía"
+      );
+    }
+
+    if (!membership.is_current) {
+      throw new Error(
+        "Esta membresía no es la membresía actual"
+      );
+    }
+
+    if (membership.status !== "active") {
+      throw new Error(
+        "Solo puedes cancelar una membresía activa"
+      );
+    }
+
+    if (membership.cancel_at_end) {
+      throw new Error(
+        "La membresía ya está cancelada"
+      );
+    }
+
+    return await cancelMembership(
+      userId,
+      membershipId
     );
-  }
-
-  if (!membership.is_current) {
-    throw new Error(
-      "Esta membresía no es la membresía actual"
-    );
-  }
-
-  if (membership.status !== "active") {
-    throw new Error(
-      "Solo puedes cancelar una membresía activa"
-    );
-  }
-
-  if (membership.cancel_at_end) {
-    throw new Error(
-      "La membresía ya está cancelada"
-    );
-  }
-
-  return await cancelMembership(
-    userId,
-    membershipId
-  );
-};
+  };
 
 // deshace la cancelación de una membresía
-export const undoMembershipCancellationService = async (
-  userId: number,
-  membershipId: number
-) => {
-  const membership = await findMembershipById(membershipId);
+export const undoMembershipCancellationService =
+  async (
+    userId: number,
+    membershipId: number
+  ) => {
+    const membership =
+      await findMembershipById(
+        membershipId
+      );
 
-  if (!membership) {
-    throw new Error("Membresía no encontrada");
-  }
+    if (!membership) {
+      throw new Error(
+        "Membresía no encontrada"
+      );
+    }
 
-  if (membership.user_id !== userId) {
-    throw new Error(
-      "No tienes permisos para modificar esta membresía"
+    if (membership.user_id !== userId) {
+      throw new Error(
+        "No tienes permisos para modificar esta membresía"
+      );
+    }
+
+    if (!membership.is_current) {
+      throw new Error(
+        "Esta membresía no es la membresía actual"
+      );
+    }
+
+    if (membership.status !== "active") {
+      throw new Error(
+        "Solo puedes deshacer la cancelación de una membresía activa"
+      );
+    }
+
+    if (!membership.cancel_at_end) {
+      throw new Error(
+        "La membresía no está cancelada"
+      );
+    }
+
+    const today = getArgentinaDate();
+
+    if (membership.end_date < today) {
+      throw new Error(
+        "La membresía ya finalizó y no se puede deshacer la cancelación"
+      );
+    }
+
+    return await undoMembershipCancellation(
+      userId,
+      membershipId
     );
-  }
+  };
 
-  if (!membership.is_current) {
+// las membresías no se eliminan para guardar el historial
+export const deleteMembershipService =
+  async (id: number) => {
+    const existingMembership =
+      await findMembershipById(id);
+
+    if (!existingMembership) {
+      throw new Error(
+        "Membresía no encontrada"
+      );
+    }
+
     throw new Error(
-      "Esta membresía no es la membresía actual"
+      "Las membresías no se pueden eliminar porque forman parte del historial"
     );
-  }
-
-  if (membership.status !== "active") {
-    throw new Error(
-      "Solo puedes deshacer la cancelación de una membresía activa"
-    );
-  }
-
-  if (!membership.cancel_at_end) {
-    throw new Error(
-      "La membresía no está cancelada"
-    );
-  }
-
-  return await undoMembershipCancellation(
-    userId,
-    membershipId
-  );
-};
-
-// las membresias no se eliminan para conservar el historial
-export const deleteMembershipService = async (id: number) => {
-  const existingMembership = await findMembershipById(id);
-
-  if (!existingMembership) {
-    throw new Error("Membresía no encontrada");
-  }
-
-  throw new Error(
-    "Las membresías no se pueden eliminar porque forman parte del historial"
-  );
-};
+  };

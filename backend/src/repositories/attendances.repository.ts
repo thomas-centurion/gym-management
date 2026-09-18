@@ -49,6 +49,28 @@ export const findAttendanceById = async (
   return result.rows[0];
 };
 
+// busca una asistencia de un socio en una fecha determinada
+export const findAttendanceByUserAndDate = async (
+  userId: number,
+  attendanceDate: string
+) => {
+  const result = await pool.query(
+    `SELECT
+      id,
+      user_id,
+      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date
+    FROM attendances
+    WHERE user_id = $1
+      AND attendance_date = $2`,
+    [
+      userId,
+      attendanceDate,
+    ]
+  );
+
+  return result.rows[0];
+};
+
 // crea una nueva asistencia
 export const createAttendance = async (
   userId: number,

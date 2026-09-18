@@ -501,3 +501,31 @@ export const markMembershipAsHistorical = async (id: number) => {
 
   return result.rows[0];
 };
+
+// busca una membresía futura activa de un socio
+export const findFutureMembershipByUserId = async (
+  userId: number
+) => {
+  const result = await pool.query(
+    `SELECT
+      id,
+      user_id,
+      plan,
+      TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+      TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
+      status,
+      next_plan,
+      cancel_at_end,
+      is_current
+    FROM memberships
+    WHERE user_id = $1
+      AND is_current = FALSE
+      AND status = 'active'
+      AND start_date > CURRENT_DATE
+    ORDER BY start_date ASC, id ASC
+    LIMIT 1`,
+    [userId]
+  );
+
+  return result.rows[0];
+};

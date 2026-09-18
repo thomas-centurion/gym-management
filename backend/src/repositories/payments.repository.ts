@@ -95,8 +95,8 @@ export const processMembershipPayment = async (
         id,
         user_id,
         plan,
-        start_date,
-        end_date,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
         status,
         next_plan,
         cancel_at_end,
@@ -114,7 +114,17 @@ export const processMembershipPayment = async (
       throw new Error("Membresía no encontrada");
     }
 
-    // la nueva membresía queda actual solamente si comienza ahora
+    // si la nueva etapa comienza ahora, la membresía anterior deja de ser actual antes de crear la nueva
+    if (isCurrent) {
+      await client.query(
+        `UPDATE memberships
+         SET is_current = FALSE
+         WHERE id = $1`,
+        [currentMembership.id]
+      );
+    }
+
+    // crea la nueva etapa de membresía
     const newMembershipResult = await client.query(
       `INSERT INTO memberships (
         user_id,
@@ -131,8 +141,8 @@ export const processMembershipPayment = async (
         id,
         user_id,
         plan,
-        start_date,
-        end_date,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
         status,
         next_plan,
         cancel_at_end,
@@ -159,16 +169,6 @@ export const processMembershipPayment = async (
     );
 
     const payment = paymentResult.rows[0];
-
-    // si la nueva etapa comienza ahora, la membresía anterior deja de ser actual
-    if (isCurrent) {
-      await client.query(
-        `UPDATE memberships
-         SET is_current = FALSE
-         WHERE id = $1`,
-        [currentMembership.id]
-      );
-    }
 
     await client.query("COMMIT");
 
@@ -204,8 +204,8 @@ export const processPlanChange = async (
         id,
         user_id,
         plan,
-        start_date,
-        end_date,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
         status,
         next_plan,
         cancel_at_end,
@@ -240,8 +240,8 @@ export const processPlanChange = async (
         id,
         user_id,
         plan,
-        start_date,
-        end_date,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
         status,
         next_plan,
         cancel_at_end,
@@ -278,8 +278,8 @@ export const processPlanChange = async (
          id,
          user_id,
          plan,
-         start_date,
-         end_date,
+         TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+         TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
          status,
          next_plan,
          cancel_at_end,
