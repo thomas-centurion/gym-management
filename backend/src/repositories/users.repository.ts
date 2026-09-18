@@ -74,3 +74,31 @@ export const deleteUser = async (id: number) => {
 
   return result.rows[0];
 };
+
+
+// crea el administrador inicial del sistema.
+export const createAdmin = async (
+  email: string,
+  password: string
+) => {
+  const result = await pool.query(
+    `INSERT INTO users (
+      first_name,
+      last_name,
+      email,
+      password,
+      role
+    )
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id, first_name, last_name, email, role`,
+    [
+      "Administrador",
+      "Inicial",
+      email,
+      password,
+      "admin",
+    ]
+  );
+
+  return result.rows[0];
+};

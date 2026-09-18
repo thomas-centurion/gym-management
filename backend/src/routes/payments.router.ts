@@ -1,21 +1,45 @@
 import { Router } from "express";
 import {
   getPaymentsController,
+  getMyPaymentsController,
   createPaymentController,
   getPaymentByIdController,
-  updatePaymentController,
-  deletePaymentController,
 } from "../controllers/payments.controller.js";
+import { authenticateToken } from "../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
 
-router.get("/", getPaymentsController);
-router.get("/:id", getPaymentByIdController);
+// el admin puede consultar todos los pagos
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles("admin"),
+  getPaymentsController
+);
 
-router.post("/", createPaymentController);
+// el socio puede consultar sus propios pagos
+router.get(
+  "/my-payments",
+  authenticateToken,
+  authorizeRoles("member"),
+  getMyPaymentsController
+);
 
-router.put("/:id", updatePaymentController);
+// el socio puede realizar un pago simulado
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRoles("member"),
+  createPaymentController
+);
 
-router.delete("/:id", deletePaymentController);
+// el admin puede consultar un pago específico
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("admin"),
+  getPaymentByIdController
+);
 
 export default router;
