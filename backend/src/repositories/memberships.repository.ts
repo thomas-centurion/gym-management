@@ -150,6 +150,30 @@ export const findMembershipById = async (id: number) => {
 
 // sincroniza las membresías de un socio cuando comienza una nueva etapa
 export const syncCurrentMembershipByUserId = async (userId: number) => {
+  // The existing GET endpoint must stay read-only in demo mode. Normal
+  // installations retain the established membership synchronization logic.
+  if (process.env.DEMO_MODE === "true") {
+    const result = await pool.query(
+      `SELECT
+        id,
+        user_id,
+        plan,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date,
+        status,
+        next_plan,
+        cancel_at_end,
+        is_current
+      FROM memberships
+      WHERE user_id = $1
+        AND is_current = TRUE
+      ORDER BY id DESC
+      LIMIT 1`,
+      [userId]
+    );
+    return result.rows[0];
+  }
+
   const client = await pool.connect();
 
   try {

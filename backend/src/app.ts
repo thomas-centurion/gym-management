@@ -5,6 +5,7 @@ import usersRouter from "./routes/users.router.js";
 import membershipsRouter from "./routes/memberships.router.js";
 import paymentsRouter from "./routes/payments.router.js";
 import attendancesRouter from "./routes/attendances.router.js";
+import { demoReadOnlyMiddleware } from "./middlewares/demo-read-only.middleware.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(
     ? cors({ origin: frontendOrigins })
     : cors()
 );
+app.use(demoReadOnlyMiddleware);
 app.use(express.json());
 
 app.use("/api/auth", authRouter);

@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import DemoReadOnlyNotice from "./DemoReadOnlyNotice";
+import { isDemoMode } from "../config/demo";
 
 interface AuthLayoutProps {
   title: string;
@@ -13,6 +15,7 @@ const AuthLayout = ({ title, description, size = "login", children }: AuthLayout
       <header className="mb-8">
         <p className="text-sm font-black tracking-[0.16em] text-slate-700">GYM MANAGEMENT</p>
         <p className="mt-1 text-xs text-slate-500">Sistema de gestión del gimnasio</p>
+        {isDemoMode && <div className="mt-3"><DemoReadOnlyNotice /></div>}
         <h1 id="auth-title" className={`mt-7 tracking-tight text-slate-900 ${size === "register" ? "text-3xl font-bold" : "text-2xl font-semibold sm:text-[30px]"}`}>{title}</h1>
         <p className="mt-2 text-sm text-slate-600">{description}</p>
       </header>

@@ -1,3 +1,5 @@
+import { demoReadOnlyMessage, isDemoMode } from "../config/demo";
+
 const getApiUrl = (): string => {
   const apiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, "");
 
@@ -15,6 +17,13 @@ interface ApiOptions {
 }
 
 export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Promise<T> => {
+  const method = (options.method ?? "GET").toUpperCase();
+  const isReadOnlyMethod = ["GET", "HEAD", "OPTIONS"].includes(method);
+  const isLogin = method === "POST" && path.split("?", 1)[0] === "/auth/login";
+  if (isDemoMode && !isReadOnlyMethod && !isLogin) {
+    throw new Error(demoReadOnlyMessage);
+  }
+
   const headers: Record<string, string> = {};
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
@@ -24,7 +33,7 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   let response: Response;
   try {
     response = await fetch(`${apiUrl}${path}`, {
-      method: options.method ?? "GET",
+      method,
       headers,
       ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
     });
