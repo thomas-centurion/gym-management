@@ -107,9 +107,25 @@ const MemberDashboard = () => {
   return (
     <div className="dashboard-shell min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 sm:px-8">
-          <div><p className="text-base font-black tracking-tight sm:text-lg">GYM MANAGEMENT</p><p className="text-xs text-slate-500">Sistema de gestión del gimnasio</p></div>
-          <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 sm:px-8"> <div className="min-w-0"> {/* identidad */} </div> {isDemoMode ? ( <div className="justify-self-center"> <DemoReadOnlyNotice /> </div> ) : ( <div /> )} <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-4"> <div className="min-w-0 text-right"> <span className="block max-w-[30vw] truncate text-sm text-slate-700 sm:max-w-none"> {user?.firstName} {user?.lastName} </span> <span className="text-xs text-slate-500">Socio</span> </div> <button type="button" onClick={logout} className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700" > Salir </button> </div> </div>
+        <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 sm:px-8">
+          <div className="min-w-0">
+            <p className="text-base font-black tracking-tight sm:text-lg">GYM MANAGEMENT</p>
+            <p className="text-xs text-slate-500">Sistema de gestión del gimnasio</p>
+          </div>
+
+          {isDemoMode ? (
+            <div className="justify-self-center"><DemoReadOnlyNotice /></div>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-4">
+            <div className="min-w-0 text-right">
+              <span className="block max-w-[30vw] truncate text-sm text-slate-700 sm:max-w-none">{user?.firstName} {user?.lastName}</span>
+              <span className="text-xs text-slate-500">Socio</span>
+            </div>
+            <button type="button" onClick={logout} className="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700">Salir</button>
+          </div>
         </div>
       </header>
       <div className="mx-auto grid max-w-7xl gap-7 px-5 py-7 sm:px-8 lg:grid-cols-[220px_1fr]">
