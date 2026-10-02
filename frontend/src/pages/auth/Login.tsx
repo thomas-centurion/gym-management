@@ -55,7 +55,7 @@ const Login = () => {
               {error}
             </p>
           )}
-          <div className="mt-4 grid gap-2">
+          <div className="mt-3 grid gap-2">
             <button
               type="button"
               disabled={isLoading}
