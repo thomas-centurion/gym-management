@@ -6,9 +6,7 @@ El proyecto cuenta con una instalación de demostración pública utilizando dat
 
 ## Demo
 
-Demo pública:
-
-https://gym-management-frontend-xi.vercel.app
+[Ver demo](https://gym-management-demo-frontend.vercel.app)
 
 La demo utiliza una base de datos independiente de producción y contiene únicamente datos ficticios.
 
@@ -18,27 +16,15 @@ Las acciones que modifican información están deshabilitadas para que el sistem
 
 #### Administrador
 
-Email:
+Email: `demo-admin@gym.com`
 
-`demo-admin@gym.com`
-
-Contraseña:
-
-`DemoAdmin2026!`
+Contraseña: `DemoAdmin2026!`
 
 #### Socio
 
-Email:
+Email: `sofia.demo@gym.com`
 
-`sofia.demo@gym.com`
-
-Contraseña:
-
-`DemoSocio1-2026!`
-
-El usuario administrador permite explorar el dashboard y las herramientas de gestión.
-
-El usuario socio permite explorar la experiencia correspondiente a un miembro del gimnasio.
+Contraseña: `DemoSocio1-2026!`
 
 ## Funcionalidades
 
@@ -69,7 +55,6 @@ El usuario socio permite explorar la experiencia correspondiente a un miembro de
 
 El proyecto está dividido en frontend y backend independientes.
 
-```text
 React + TypeScript
         |
         v
@@ -82,3 +67,94 @@ React + TypeScript
         |
         v
 PostgreSQL / Supabase
+
+La aplicación utiliza el backend como fuente de verdad para las reglas de negocio y el acceso a la base de datos.
+
+La instalación de demostración utiliza infraestructura y datos separados de producción.
+
+## Tecnologías
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
+
+### Backend
+
+- Node.js
+- TypeScript
+- Express
+- PostgreSQL
+- pg
+- JWT
+- bcrypt
+
+### Infraestructura
+
+- Vercel
+- Supabase
+- PostgreSQL
+
+## Roles
+
+El sistema cuenta con dos roles:
+
+- `admin`: acceso a las herramientas de administración del gimnasio.
+- `member`: acceso a la información y operaciones correspondientes al socio.
+
+El registro público crea únicamente cuentas de socio.
+
+Las cuentas de administrador se crean mediante el proceso de administración inicial del sistema.
+
+## Membresías
+
+El sistema soporta tres tipos de planes:
+
+- Mensual
+- Trimestral
+- Anual
+
+Las membresías mantienen su historial y utilizan fechas correspondientes a períodos de calendario.
+
+También se contemplan membresías futuras pendientes, cambios de plan, cancelaciones al finalizar el período y renovaciones.
+
+## Seguridad
+
+- Contraseñas almacenadas mediante bcrypt.
+- Autenticación mediante JWT.
+- Variables sensibles configuradas mediante variables de entorno.
+- La base de datos no se conecta directamente desde el frontend.
+- La demo utiliza una base de datos independiente de producción.
+- El modo demo bloquea las operaciones de escritura tanto en frontend como en backend.
+
+## Ejecución local
+
+El proyecto contiene dos aplicaciones independientes:
+
+frontend/
+backend/
+
+Las instrucciones específicas de configuración y despliegue se encuentran en `DEPLOYMENT.md`.
+
+Las variables de entorno deben configurarse localmente y no deben incluirse en el repositorio.
+
+## Estructura
+
+gym-management/
+├── backend/
+│   ├── migrations/
+│   └── src/
+├── frontend/
+│   ├── public/
+│   └── src/
+├── DEPLOYMENT.md
+└── README.md
+
+## Estado del proyecto
+
+Proyecto funcional desplegado en producción y acompañado por una instalación de demostración independiente.
+
+La versión de demostración está diseñada para permitir la exploración de la interfaz y funcionalidades sin modificar sus datos.
