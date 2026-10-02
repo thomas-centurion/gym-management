@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.dashboard-shell button:enabled,
+.dashboard-shell select:enabled {
+  cursor: pointer;
+}
+
+.dashboard-shell button:disabled,
+.dashboard-shell select:disabled {
+  cursor: not-allowed;
+}
+
+.dashboard-shell :is(button, a, input, select, textarea):focus-visible,
+.auth-shell :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #047857;
+  outline-offset: 2px;
+}
+
+.auth-shell input:focus-visible {
+  outline-color: #0f172a;
+}
+
+.auth-shell button:enabled {
+  cursor: pointer;
+}
+
+.auth-shell button:disabled {
+  cursor: not-allowed;
+}

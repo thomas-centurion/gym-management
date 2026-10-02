@@ -23,19 +23,20 @@ export const registerController = async (
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "El email ya está registrado") {
-        return res.status(409).json({
-          message: error.message,
-        });
+        return res.status(409).json({ message: error.message });
       }
 
-      return res.status(400).json({
-        message: error.message,
-      });
+      if (
+        error.message === "Todos los campos son obligatorios" ||
+        error.message === "El email no es válido" ||
+        error.message === "La contraseña debe tener al menos 6 caracteres"
+      ) {
+        return res.status(400).json({ message: error.message });
+      }
     }
 
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    console.error("ERROR AL REGISTRAR LA CUENTA:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
@@ -53,18 +54,15 @@ export const loginController = async (
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Credenciales inválidas") {
-        return res.status(401).json({
-          message: error.message,
-        });
+        return res.status(401).json({ message: error.message });
       }
 
-      return res.status(400).json({
-        message: error.message,
-      });
+      if (error.message === "Email y contraseña son obligatorios") {
+        return res.status(400).json({ message: error.message });
+      }
     }
 
-    res.status(500).json({
-      message: "Error interno del servidor",
-    });
+    console.error("ERROR AL INICIAR SESIÓN:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };

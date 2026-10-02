@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   getMembershipsController,
+  deleteMembershipController,
   createMembershipController,
   getCurrentMembershipController,
   getMembershipByIdController,
@@ -29,6 +30,13 @@ router.post(
   authenticateToken,
   authorizeRoles("admin"),
   createMembershipController
+);
+
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("admin"),
+  deleteMembershipController
 );
 
 router.get(

@@ -20,6 +20,113 @@ export const getMemberships = async () => {
   return result.rows;
 };
 
+export const deletePendingMembership = async (id: number, today: string) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const membershipResult = await client.query(
+      `SELECT
+        id,
+        status,
+        is_current,
+        TO_CHAR(start_date, 'YYYY-MM-DD') AS start_date,
+        TO_CHAR(end_date, 'YYYY-MM-DD') AS end_date
+      FROM memberships
+      WHERE id = $1
+      FOR UPDATE`,
+      [id]
+    );
+    const membership = membershipResult.rows[0];
+
+    if (!membership) {
+      throw new Error("Membresía no encontrada");
+    }
+    if (membership.status !== "pending") {
+      throw new Error("Solo se pueden eliminar membresías pendientes");
+    }
+    if (membership.is_current) {
+      throw new Error("No se puede eliminar una membresía pendiente que está marcada como actual");
+    }
+    if (membership.start_date <= today || membership.end_date < today) {
+      throw new Error("No se puede eliminar una membresía que ya comenzó o finalizó");
+    }
+
+    const paymentsResult = await client.query(
+      "SELECT 1 FROM payments WHERE membership_id = $1 LIMIT 1",
+      [id]
+    );
+    if (paymentsResult.rowCount) {
+      throw new Error("No se puede eliminar una membresía con pagos asociados");
+    }
+
+    const referencesResult = await client.query(
+      `SELECT
+        child_namespace.nspname AS schema_name,
+        child_table.relname AS table_name,
+        child_column.attname AS column_name
+      FROM pg_constraint foreign_key
+      JOIN pg_class parent_table ON parent_table.oid = foreign_key.confrelid
+      JOIN pg_namespace parent_namespace ON parent_namespace.oid = parent_table.relnamespace
+      JOIN pg_class child_table ON child_table.oid = foreign_key.conrelid
+      JOIN pg_namespace child_namespace ON child_namespace.oid = child_table.relnamespace
+      JOIN LATERAL unnest(foreign_key.conkey) WITH ORDINALITY AS child_key(attnum, ord) ON TRUE
+      JOIN LATERAL unnest(foreign_key.confkey) WITH ORDINALITY AS parent_key(attnum, ord)
+        ON parent_key.ord = child_key.ord
+      JOIN pg_attribute child_column
+        ON child_column.attrelid = child_table.oid AND child_column.attnum = child_key.attnum
+      JOIN pg_attribute parent_column
+        ON parent_column.attrelid = parent_table.oid AND parent_column.attnum = parent_key.attnum
+      WHERE foreign_key.contype = 'f'
+        AND foreign_key.confrelid = to_regclass('memberships')
+        AND parent_column.attname = 'id'`
+    );
+
+    for (const reference of referencesResult.rows) {
+      const quoteIdentifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
+      const tableName = `${quoteIdentifier(reference.schema_name)}.${quoteIdentifier(reference.table_name)}`;
+      const columnName = quoteIdentifier(reference.column_name);
+      const dependentResult = await client.query(
+        `SELECT 1 FROM ${tableName} WHERE ${columnName} = $1 LIMIT 1`,
+        [id]
+      );
+
+      if (dependentResult.rowCount) {
+        throw new Error("No se puede eliminar la membresía porque tiene otros registros asociados");
+      }
+    }
+
+    const deleteResult = await client.query(
+      `DELETE FROM memberships
+      WHERE id = $1
+        AND status = 'pending'
+        AND is_current = FALSE
+        AND start_date > $2::date
+        AND end_date >= $2::date
+      RETURNING id`,
+      [id, today]
+    );
+
+    if (!deleteResult.rowCount) {
+      throw new Error("No se pudo confirmar que la membresía siga siendo eliminable");
+    }
+
+    await client.query("COMMIT");
+    return deleteResult.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23503") {
+      throw new Error("No se puede eliminar la membresía porque tiene otros registros asociados");
+    }
+
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 // obtiene una membresía por su ID
 export const findMembershipById = async (id: number) => {
   const result = await pool.query(
@@ -81,11 +188,11 @@ export const syncCurrentMembershipByUserId = async (userId: number) => {
       `SELECT TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') AS current_date`
     );
 
-    const today = new Date(todayResult.rows[0].current_date);
-    const currentEndDate = new Date(currentMembership.end_date);
+    const today = todayResult.rows[0].current_date;
+    const currentEndDate = currentMembership.end_date;
 
     // no cambia nada mientras la membresía actual siga vigente
-    if (currentEndDate > today) {
+    if (currentEndDate >= today) {
       await client.query("COMMIT");
       return currentMembership;
     }

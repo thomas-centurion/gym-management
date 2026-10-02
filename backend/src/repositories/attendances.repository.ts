@@ -71,28 +71,48 @@ export const findAttendanceByUserAndDate = async (
   return result.rows[0];
 };
 
-// crea una nueva asistencia
-export const createAttendance = async (
+// serializes attendance creation for one user so concurrent requests cannot
+// pass the duplicate check and insert the same user/date twice.
+export const createAttendanceOncePerDay = async (
   userId: number,
   attendanceDate: string
 ) => {
-  const result = await pool.query(
-    `INSERT INTO attendances (
-      user_id,
-      attendance_date
-    )
-    VALUES ($1, $2)
-    RETURNING
-      id,
-      user_id,
-      TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date`,
-    [
-      userId,
-      attendanceDate,
-    ]
-  );
+  const client = await pool.connect();
 
-  return result.rows[0];
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [userId]);
+
+    const existingResult = await client.query(
+      `SELECT id
+       FROM attendances
+       WHERE user_id = $1 AND attendance_date = $2
+       LIMIT 1`,
+      [userId, attendanceDate]
+    );
+
+    if (existingResult.rowCount) {
+      throw new Error("El socio ya tiene una asistencia registrada para esa fecha");
+    }
+
+    const result = await client.query(
+      `INSERT INTO attendances (user_id, attendance_date)
+       VALUES ($1, $2)
+       RETURNING
+         id,
+         user_id,
+         TO_CHAR(attendance_date, 'YYYY-MM-DD') AS attendance_date`,
+      [userId, attendanceDate]
+    );
+
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // elimina una asistencia

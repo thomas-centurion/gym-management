@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import {
   getMembershipsService,
+  deleteMembershipService,
   createMembershipService,
   getMembershipByIdService,
   getCurrentMembershipService,
@@ -10,6 +11,15 @@ import {
   cancelMembershipService,
   undoMembershipCancellationService,
 } from "../services/memberships.service.js";
+
+const membershipDeletionErrors = new Set([
+  "Solo se pueden eliminar membresías pendientes",
+  "No se puede eliminar una membresía pendiente que está marcada como actual",
+  "No se puede eliminar una membresía que ya comenzó o finalizó",
+  "No se puede eliminar una membresía con pagos asociados",
+  "No se pudo confirmar que la membresía siga siendo eliminable",
+  "No se puede eliminar la membresía porque tiene otros registros asociados",
+]);
 
 // obtiene todas las membresías
 export const getMembershipsController = async (
@@ -33,6 +43,32 @@ export const getMembershipsController = async (
   }
 };
 
+export const deleteMembershipController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const id = Number(req.params.id);
+    await deleteMembershipService(id);
+
+    return res.json({
+      message: "Membresía pendiente eliminada correctamente",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Membresía no encontrada") {
+        return res.status(404).json({ error: error.message });
+      }
+      if (membershipDeletionErrors.has(error.message)) {
+        return res.status(409).json({ error: error.message });
+      }
+    }
+
+    console.error("ERROR AL ELIMINAR LA MEMBRESÍA:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
 // crea una nueva membresía
 export const createMembershipController = async (
   req: Request,
@@ -43,7 +79,6 @@ export const createMembershipController = async (
       userId,
       plan,
       startDate,
-      endDate,
       status,
     } = req.body;
 
@@ -52,7 +87,6 @@ export const createMembershipController = async (
         userId,
         plan,
         startDate,
-        endDate,
         status
       );
 
@@ -66,8 +100,7 @@ export const createMembershipController = async (
           "El plan no es válido" ||
         error.message ===
           "El estado no es válido" ||
-        error.message ===
-          "La fecha de finalización debe ser posterior a la fecha de inicio" ||
+          error.message === "La fecha de inicio no es válida" ||
         error.message ===
           "No se puede crear una nueva membresía porque el socio ya tiene una membresía actual"
       ) {
@@ -174,7 +207,6 @@ export const updateMembershipController =
       const {
         plan,
         startDate,
-        endDate,
         status,
       } = req.body;
 
@@ -183,7 +215,6 @@ export const updateMembershipController =
           id,
           plan,
           startDate,
-          endDate,
           status
         );
 
@@ -196,7 +227,7 @@ export const updateMembershipController =
           error.message ===
             "El plan no es válido" ||
           error.message ===
-            "La fecha de finalización debe ser posterior a la fecha de inicio" ||
+            "La fecha de inicio no es válida" ||
           error.message ===
             "El estado no es válido"
         ) {

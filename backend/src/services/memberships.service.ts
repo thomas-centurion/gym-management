@@ -1,5 +1,6 @@
 import {
   getMemberships,
+  deletePendingMembership,
   createMembership,
   findMembershipById,
   findCurrentMembershipByUserId,
@@ -9,6 +10,7 @@ import {
 } from "../repositories/memberships.repository.js";
 
 import { processPlanChange } from "../repositories/payments.repository.js";
+import { calculateMembershipEndDate, firstDayAfterPeriod, firstDayOfMonth, isValidDate } from "../utils/membership-dates.js";
 
 const validPlans = [
   "monthly",
@@ -59,14 +61,12 @@ export const createMembershipService = async (
   userId: number,
   plan: string,
   startDate: string,
-  endDate: string,
   status: string
 ) => {
   if (
     !userId ||
     !plan ||
     !startDate ||
-    !endDate ||
     !status
   ) {
     throw new Error(
@@ -89,14 +89,9 @@ export const createMembershipService = async (
     );
   }
 
-  if (
-    new Date(endDate) <=
-    new Date(startDate)
-  ) {
-    throw new Error(
-      "La fecha de finalización debe ser posterior a la fecha de inicio"
-    );
-  }
+  if (!isValidDate(startDate)) throw new Error("La fecha de inicio no es válida");
+  const calendarStartDate = firstDayOfMonth(startDate);
+  const endDate = calculateMembershipEndDate(calendarStartDate, plan);
 
   const currentMembership =
     await findCurrentMembershipByUserId(
@@ -112,7 +107,7 @@ export const createMembershipService = async (
   return await createMembership(
     userId,
     plan,
-    startDate,
+    calendarStartDate,
     endDate,
     status
   );
@@ -147,13 +142,11 @@ export const updateMembershipService = async (
   id: number,
   plan: string,
   startDate: string,
-  endDate: string,
   status: string
 ) => {
   if (
     !plan ||
     !startDate ||
-    !endDate ||
     !status
   ) {
     throw new Error(
@@ -185,19 +178,14 @@ export const updateMembershipService = async (
     );
   }
 
-  if (
-    new Date(endDate) <=
-    new Date(startDate)
-  ) {
-    throw new Error(
-      "La fecha de finalización debe ser posterior a la fecha de inicio"
-    );
-  }
+  if (!isValidDate(startDate)) throw new Error("La fecha de inicio no es válida");
+  const calendarStartDate = firstDayOfMonth(startDate);
+  const endDate = calculateMembershipEndDate(calendarStartDate, plan);
 
   return await updateMembership(
     id,
     plan,
-    startDate,
+    calendarStartDate,
     endDate,
     status,
     existingMembership.next_plan ?? null,
@@ -274,61 +262,11 @@ export const changeMembershipPlanService =
 
     const amount = planPrices[newPlan];
 
-    let startDate: string;
-
-    // convierte la fecha de finalización a formato YYYY-MM-DD
-    if (
-      membership.end_date instanceof Date
-    ) {
-      const year =
-        membership.end_date.getUTCFullYear();
-
-      const month = String(
-        membership.end_date.getUTCMonth() + 1
-      ).padStart(2, "0");
-
-      const day = String(
-        membership.end_date.getUTCDate()
-      ).padStart(2, "0");
-
-      startDate =
-        `${year}-${month}-${day}`;
-    } else {
-      startDate =
-        String(membership.end_date)
-          .split("T")[0];
-    }
-
-    const end = new Date(
-      `${startDate}T00:00:00Z`
-    );
-
-    if (Number.isNaN(end.getTime())) {
-      throw new Error(
-        "La fecha de finalización de la membresía no es válida"
-      );
-    }
-
-    if (newPlan === "monthly") {
-      end.setUTCMonth(
-        end.getUTCMonth() + 1
-      );
-    }
-
-    if (newPlan === "quarterly") {
-      end.setUTCMonth(
-        end.getUTCMonth() + 3
-      );
-    }
-
-    if (newPlan === "annual") {
-      end.setUTCFullYear(
-        end.getUTCFullYear() + 1
-      );
-    }
-
-    const endDate =
-      end.toISOString().split("T")[0];
+    const membershipEndDate = membership.end_date instanceof Date
+      ? membership.end_date.toISOString().slice(0, 10)
+      : String(membership.end_date).split("T")[0];
+    const startDate = firstDayAfterPeriod(membershipEndDate);
+    const endDate = calculateMembershipEndDate(startDate, newPlan);
 
     return await processPlanChange(
       userId,
@@ -442,19 +380,11 @@ export const undoMembershipCancellationService =
     );
   };
 
-// las membresías no se eliminan para guardar el historial
-export const deleteMembershipService =
-  async (id: number) => {
-    const existingMembership =
-      await findMembershipById(id);
+// solo elimina membresías pendientes futuras que no formen parte del historial
+export const deleteMembershipService = async (id: number) => {
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error("Membresía no encontrada");
+  }
 
-    if (!existingMembership) {
-      throw new Error(
-        "Membresía no encontrada"
-      );
-    }
-
-    throw new Error(
-      "Las membresías no se pueden eliminar porque forman parte del historial"
-    );
-  };
+  return deletePendingMembership(id, getArgentinaDate());
+};

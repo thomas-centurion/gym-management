@@ -3,7 +3,7 @@ import {
   getAttendancesByUserId,
   findAttendanceById,
   findAttendanceByUserAndDate,
-  createAttendance,
+  createAttendanceOncePerDay,
   deleteAttendance,
 } from "../repositories/attendances.repository.js";
 
@@ -158,7 +158,7 @@ export const createAttendanceService = async (
     );
   }
 
-  return await createAttendance(
+  return await createAttendanceOncePerDay(
     userId,
     attendanceDate
   );

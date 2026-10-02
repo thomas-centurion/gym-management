@@ -113,6 +113,11 @@ export const updateUserController = async (
         return;
       }
 
+      if (error.message === "El email no es válido") {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+
       if (error.message === "Usuario no encontrado") {
         res.status(404).json({
           error: error.message,

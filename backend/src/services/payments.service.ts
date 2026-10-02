@@ -10,6 +10,7 @@ import {
   findCurrentMembershipByUserId,
   findFutureMembershipByUserId,
 } from "../repositories/memberships.repository.js";
+import { calculateMembershipEndDate, firstDayOfMonth, firstDayAfterPeriod } from "../utils/membership-dates.js";
 
 export const planPrices: Record<string, number> = {
   monthly: 10000,
@@ -54,98 +55,6 @@ const getArgentinaDate = (): string => {
   )?.value;
 
   return `${year}-${month}-${day}`;
-};
-
-// suma meses conservando el último día válido del mes
-const addMonths = (
-  dateString: string,
-  months: number
-): string => {
-  const [
-    year,
-    month,
-    day,
-  ] = dateString
-    .split("-")
-    .map(Number);
-
-  const targetMonth =
-    month - 1 + months;
-
-  const targetYear =
-    year +
-    Math.floor(targetMonth / 12);
-
-  const normalizedMonth =
-    ((targetMonth % 12) + 12) % 12;
-
-  const lastDayOfTargetMonth =
-    new Date(
-      Date.UTC(
-        targetYear,
-        normalizedMonth + 1,
-        0
-      )
-    ).getUTCDate();
-
-  const targetDay = Math.min(
-    day,
-    lastDayOfTargetMonth
-  );
-
-  return `${targetYear}-${String(
-    normalizedMonth + 1
-  ).padStart(2, "0")}-${String(
-    targetDay
-  ).padStart(2, "0")}`;
-};
-
-// suma el período correspondiente al plan
-const calculateEndDate = (
-  startDate: string,
-  plan: string
-): string => {
-  if (plan === "monthly") {
-    return addMonths(startDate, 1);
-  }
-
-  if (plan === "quarterly") {
-    return addMonths(startDate, 3);
-  }
-
-  if (plan === "annual") {
-    const [
-      year,
-      month,
-      day,
-    ] = startDate
-      .split("-")
-      .map(Number);
-
-    const targetYear = year + 1;
-
-    const lastDayOfTargetMonth =
-      new Date(
-        Date.UTC(
-          targetYear,
-          month,
-          0
-        )
-      ).getUTCDate();
-
-    const targetDay = Math.min(
-      day,
-      lastDayOfTargetMonth
-    );
-
-    return `${targetYear}-${String(
-      month
-    ).padStart(2, "0")}-${String(
-      targetDay
-    ).padStart(2, "0")}`;
-  }
-
-  throw new Error("El plan no es válido");
 };
 
 // obtiene todos los pagos
@@ -252,7 +161,7 @@ export const createPaymentService = async (
 
   const today = getArgentinaDate();
 
-  let startDate = today;
+  let startDate = firstDayOfMonth(today);
   let isCurrent = true;
 
   // si la membresía sigue activa, la renovación comienza al terminar el período actual
@@ -260,15 +169,13 @@ export const createPaymentService = async (
     currentMembership.status ===
     "active"
   ) {
-    startDate = normalizeDate(
-      currentMembership.end_date
-    );
+    startDate = firstDayAfterPeriod(normalizeDate(currentMembership.end_date));
 
     isCurrent = false;
   }
 
   const endDate =
-    calculateEndDate(
+    calculateMembershipEndDate(
       startDate,
       plan
     );

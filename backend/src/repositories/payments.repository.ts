@@ -114,6 +114,31 @@ export const processMembershipPayment = async (
       throw new Error("Membresía no encontrada");
     }
 
+    if (!currentMembership.is_current) {
+      throw new Error("Esta membresía no es la membresía actual");
+    }
+
+    if (currentMembership.next_plan) {
+      throw new Error("Ya existe un cambio de plan pendiente");
+    }
+
+    if (currentMembership.status === "active") {
+      const futureMembershipResult = await client.query(
+        `SELECT id
+         FROM memberships
+         WHERE user_id = $1
+           AND is_current = FALSE
+           AND status = 'active'
+           AND start_date > CURRENT_DATE
+         LIMIT 1`,
+        [userId]
+      );
+
+      if (futureMembershipResult.rowCount) {
+        throw new Error("Ya existe una membresía futura pendiente");
+      }
+    }
+
     // si la nueva etapa comienza ahora, la membresía anterior deja de ser actual antes de crear la nueva
     if (isCurrent) {
       await client.query(
@@ -221,6 +246,19 @@ export const processPlanChange = async (
 
     if (!currentMembership) {
       throw new Error("Membresía no encontrada");
+    }
+
+    if (currentMembership.status !== "active") {
+      throw new Error("Solo puedes cambiar el plan de una membresía activa");
+    }
+    if (!currentMembership.is_current) {
+      throw new Error("Esta membresía no es la membresía actual");
+    }
+    if (currentMembership.next_plan) {
+      throw new Error("Ya existe un cambio de plan pendiente");
+    }
+    if (currentMembership.cancel_at_end) {
+      throw new Error("No puedes cambiar de plan mientras la membresía está cancelada");
     }
 
     // crea la nueva membresía futura

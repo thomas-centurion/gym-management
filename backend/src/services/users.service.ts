@@ -81,6 +81,12 @@ export const updateUserService = async (
     throw new Error("Todos los campos son obligatorios");
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    throw new Error("El email no es válido");
+  }
+
   const existingUser = await findUserById(id);
 
   if (!existingUser) {

@@ -8,7 +8,16 @@ import attendancesRouter from "./routes/attendances.router.js";
 
 const app = express();
 
-app.use(cors());
+const frontendOrigins = process.env.FRONTEND_ORIGIN
+  ?.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  frontendOrigins?.length
+    ? cors({ origin: frontendOrigins })
+    : cors()
+);
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
